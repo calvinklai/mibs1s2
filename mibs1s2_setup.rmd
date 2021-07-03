@@ -24,14 +24,46 @@ invisible(lapply(packages, library, character.only = TRUE))
 rm(list = c("packages", "installed_packages"))
 
 #Data to load 
-t1 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mibstudy2_t1-clean.csv", guess_max = min(12000))
-t2 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mibstudy2_t2-clean.csv", guess_max = min(12000))
-t3 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mibstudy2_t3-clean.csv", guess_max = min(12000))
+s1t1t2 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_all-time1-2.csv", guess_max = min(12000))
+s2t1t2 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mibstudy2_t1t2-clean.csv", guess_max = min(12000))
 
-t1t2 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mibstudy2_t1t2-clean.csv", guess_max = min(12000))
-t1t3 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mibstudy2_t1t3-clean.csv", guess_max = min(12000))
-t2t3 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mibstudy2_t2t3-clean.csv", guess_max = min(12000))
-all <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mibstudy2_all-clean.csv", guess_max = min(12000))
+# Diagnosing similarities + differences in two datasets. Exported the data and inspected using diffchecker.com
+# write_csv(s1t1t2[,order(colnames(s1t1t2))], "C:/Users/Calvin/Downloads/temp1.csv")
+# write_csv(s2t1t2[,order(colnames(s2t1t2))], "C:/Users/Calvin/Downloads/temp2.csv")
+
+# Removing non-shared variables
+s1t1t2 <- s1t1t2 %>% dplyr::select(-c(initials.t1, initials.t2, notes.t1, notes.t2,
+                                      session_date, session_id.t1, session_id.t2))
+s2t1t2 <- s2t1t2 %>% dplyr::select(-c(
+  biasworry_21, DistributionChannel.x, DistributionChannel.y, duration.x, duration.y, EndDate.x, EndDate.y, 
+  facilitator1, facilitator2, Finished.x, Finished.y, id3_middle_street.x, id3_middle_street.y, 
+  id3_mom_middle.x, id3_mom_middle.y, id3_mom_month.x, id3_mom_month.y, id3_mom_street.x, id3_mom_street.y, 
+  id3_month_middle.x, id3_month_middle.y, id3_month_street.x, id3_month_street.y, id3_siblings_middle.x, 
+  id3_siblings_middle.y, id3_siblings_mom.x, id3_siblings_mom.y, id3_siblings_month.x, id3_siblings_month.y, 
+  id3_siblings_street.x, id3_siblings_street.y, knowledge_21, Progress.x, Progress.y, 
+  RecordedDate.x, RecordedDate.y, ResponseId.x, ResponseId.y, StartDate.x, StartDate.y, 
+  Status.x, Status.y, strategy_21, theories_21, UserLanguage.x, UserLanguage.y))
+s2t1t2 <- s2t1t2 %>% dplyr::select(-c(t1t2delay, training_date))
+
+# Creating special versions for variables that differed in variable type between the two datasets.
+s1t1t2 <- s1t1t2 %>% dplyr::rename(
+  id_siblings.t1.s1 = id_siblings.t1, id_mom.t1.s1 = id_mom.t1, id_month.t1.s1 = id_month.t1, id_middle.t1.s1 = id_middle.t1, 
+  id_siblings.t2.s1 = id_siblings.t2, id_mom.t2.s1 = id_mom.t2, id_month.t2.s1 = id_month.t2, id_middle.t2.s1 = id_middle.t2,   
+  race.s1 = race, gender.s1 = gender, education.s1 = education)
+s1t1t2 <- s1t1t2 %>% mutate(sample = 1)
+s2t1t2 <- s2t1t2 %>% dplyr::rename(
+  id_siblings.t1.s2 = id_siblings.t1, id_mom.t1.s2 = id_mom.t1, id_month.t1.s2 = id_month.t1, id_middle.t1.s2 = id_middle.t1, 
+  id_siblings.t2.s2 = id_siblings.t2, id_mom.t2.s2 = id_mom.t2, id_month.t2.s2 = id_month.t2, id_middle.t2.s2 = id_middle.t2,   
+  race.s2 = race, gender.s2 = gender, education.s2 = education)
+s2t1t2 <- s2t1t2 %>% mutate(sample = 2)
+
+
+# STOPPED HERE. Created a full merge. Need to see if more cleaning is needed. If not, then I can start running analyses.
+temp <- full_join(s1t1t2,s2t1t2)
+
+
+# Haven't reviewed the code below.
+
 
 # Creating long data for long analyses: All time points
 timePivot <- function(data){
