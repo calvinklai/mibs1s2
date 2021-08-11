@@ -1,0 +1,449 @@
+---
+title: "MIB for Law Enforcement - Combined Sample - Results"
+author: "Dr. Calvin Lai"
+date: "07/24/2021"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+always_allow_html: yes
+---
+
+```{r setup, include = FALSE}
+# Package names
+packages <- c("sjPlot",  "psych", "foreign", "tidyverse", "glue", "effsize", "cowplot", "lme4", "lmerTest", "corrplot", "summarytools", "effsize", "ggstatsplot", "ggthemes")
+
+# Install packages not yet installed
+installed_packages <- packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}
+
+# Packages loading
+invisible(lapply(packages, library, character.only = TRUE))
+rm(list = c("packages", "installed_packages"))
+
+# Data to load 
+t1t2 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2.csv", guess_max = min(12000))
+t1t2Long <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long.csv", guess_max = min(12000))
+t1t2LongBiasworryT1 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_biasworryt1.csv", guess_max = min(12000))
+t1t2LongKnowledgeT1 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_knowledget1.csv", guess_max = min(12000))
+t1t2LongTheoriesT1 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_theoriest1.csv", guess_max = min(12000))
+t1t2LongStratKnowT1 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_stratknowt1.csv", guess_max = min(12000))
+t1t2LongStratEfficacyT1 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_stratefficacyt1.csv", guess_max = min(12000))
+t1t2LongStratMotT1 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_stratmott1.csv", guess_max = min(12000))
+sessioninfo <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_sessioninfo.csv", guess_max = min(12000))
+```
+
+### Baseline characteristics
+```{r baseline characteristics}
+# NOTE: Cohen's d and t-tests were not used in reporting. 
+# Knowledge
+t.test(t1t2$knowledge.t1, mu = 1)
+sd(t1t2$knowledge.t1,na.rm=T)
+effsize::cohen.d(t1t2$knowledge.t1, f = NA, mu =1, na.rm = T)
+freq(t1t2$knowledge.t1)
+
+# Concern
+t.test(t1t2$biasworry.t1, mu = 1)
+sd(t1t2$biasworry.t1,na.rm=T)
+effsize::cohen.d(t1t2$biasworry.t1, f = NA, mu =1, na.rm = T)
+freq(t1t2$biasworry.t1)
+
+# Strategy Use
+t.test(t1t2$strategy_use)
+sd(t1t2$strategy_use,na.rm=T)
+effsize::cohen.d(t1t2$strategy_use, f = NA, mu =0, na.rm = T)
+freq(t1t2$strategy_use)
+
+freq(t1t2$perspective_use)
+freq(t1t2$mindful_use)
+freq(t1t2$substitution_use)
+freq(t1t2$exposure_use)
+freq(t1t2$individuation_use)
+```
+
+
+# Internal survey calculations
+```{r Internal survey calculations}
+# 1)	Whether the facilitators were knowledgeable, credible, and engaging on a scale from 1 (Strongly agree) to 7 (Strongly disagree). 
+psych::m2t(1.35,1.70,.78,1.09,n1=3629,n2=2103) 
+t2d(14.09422,n1=3629,n2=2103)
+
+# 5)	Whether officers would use information from the workshop in their work or personal life on a scale from 1 (Strongly agree) to 7 (Strongly disagree). 
+psych::m2t(1.95, 2.26,1.29,1.45,n1=3626,n2=2103) 
+t2d(8.37,n1=3626,n2=2103)
+```
+
+
+### General perceptions of bias
+```{r Combined Sample  General perceptions of bias, echo=F, warning=F, message=F}
+lmer.null <- summary(lmer(knowledge ~ (1|id), data = t1t2Long))
+
+anova(lmer(knowledge ~ time + (1|id), data = t1t2Long), lmer.null)
+summary(lmer(knowledge ~ time + (1|id), data = t1t2Long))
+effsize::cohen.d(t1t2$knowledge.t2, t1t2$knowledge.t1, paired=T, na.rm = T)
+
+summary(lmer(biasworry ~ time + (1|id), data = t1t2Long))
+effsize::cohen.d(t1t2$biasworry.t2, t1t2$biasworry.t1, paired=T, na.rm = T)
+
+summary(lmer(theories ~ time + (1|id), data = t1t2Long))
+effsize::cohen.d(t1t2$theories.t2, t1t2$theories.t1, paired=T, na.rm = T)
+
+```
+
+### Strategies to manage bias
+```{r Combined Sample  strategies to manage bias, echo=F, warning=F, message=F}
+# know
+t.test(t1t2$strat_know.t2, mu = 1)
+sd(t1t2$strat_know.t2,na.rm=T)
+effsize::cohen.d(t1t2$strat_know.t2, f = NA, mu =1, na.rm = T)
+freq(t1t2$strat_know.t2)
+
+# Efficacy
+t.test(t1t2$strat_efficacy.t2, mu = 1)
+sd(t1t2$strat_efficacy.t2,na.rm=T)
+effsize::cohen.d(t1t2$strat_efficacy.t2, f = NA, mu =1, na.rm = T)
+freq(t1t2$strat_efficacy.t2)
+
+# Motivation
+t.test(t1t2$strat_mot.t2, mu = 1)
+sd(t1t2$strat_mot.t2,na.rm=T)
+effsize::cohen.d(t1t2$strat_mot.t2, f = NA, mu =1, na.rm = T)
+freq(t1t2$strat_mot.t2)
+
+# Strategy intentions
+summary(lmer(strategy ~ time + (1|id), data = t1t2Long))
+effsize::cohen.d(t1t2$strategy_intend, t1t2$strategy_use, paired=T, na.rm = T)
+mean(t1t2$strategy_intend,na.rm=T)
+
+# Differences between individual strategies
+summary(lmer(substitution ~ time + (1|id), data = t1t2Long))
+effsize::cohen.d(t1t2$substitution_intend, t1t2$substitution_use, na.rm = T)
+
+summary(lmer(perspective ~ time + (1|id), data = t1t2Long))
+effsize::cohen.d(t1t2$perspective_intend, t1t2$perspective_use, na.rm = T)
+
+summary(lmer(mindful ~ time + (1|id), data = t1t2Long))
+effsize::cohen.d(t1t2$mindful_intend, t1t2$mindful_use, na.rm = T)
+
+# Correlation
+summary(lm(strategy_intend ~ strategy_use*strat_know.t2, data = t1t2))
+summary(lm(strategy_intend ~ strategy_use*strat_efficacy.t2, data = t1t2))
+summary(lm(strategy_intend ~ strategy_use*strat_mot.t2, data = t1t2))
+```
+
+### Moderators (T1 + T2)
+
+#### Perceptions of respect from citizens (continuous)
+**Summary**: Perceptions of respect from citizens did not consistently moderate training effects. (Significant effect(s): 0/4 models).
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Knowledge
+`r knitr::kable(summary(lmer(knowledge ~ time * respect + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * respect + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concern about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * respect + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * respect + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+\
+
+#### Centrality of law enforcement identity (continuous)
+**Summary**: Police identity centrality did not consistently moderate training effects, except for perceived knowledge. Officers who saw being a police officer as more central to their identity were more likely to see be knowledgeable about bias after training.
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Knowledge
+`r knitr::kable(summary(lmer(knowledge ~ time * centrality + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * centrality + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concern about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * centrality + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * centrality + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+\
+
+#### Contact with minority group members (continuous)
+**Summary**: Contact with Black individuals did not consistently moderate training effects. (Significant effect(s): 0/4 models).
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Knowledge
+`r knitr::kable(summary(lmer(knowledge ~ time * frequency_black + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * frequency_black + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concern about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * frequency_black + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * frequency_black + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+\
+
+#### Years in department (continuous)
+**Summary**: Number of years worked in the department did not consistently moderate training effects. (Significant effect(s): 0/4 models).
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Knowledge
+`r knitr::kable(summary(lmer(knowledge ~ time * yearsworked + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * yearsworked + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concern about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * yearsworked + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * yearsworked + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+\
+
+#### Rank (Sergeant or above vs. Below Sergeant)
+**Summary**: Officer rank did not consistently moderate training effects. (Significant effect(s): 0/4 models).
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Knowledge
+`r knitr::kable(summary(lmer(knowledge ~ time * rank + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * rank + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concern about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * rank + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * rank + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+\
+
+#### Race or ethnicity (White vs. Non-White) 
+**Summary**: White officers did not consistently differ from Non-White officers in training effects. (Significant effect(s): 0/4 models).
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Knowledge
+`r knitr::kable(summary(lmer(knowledge ~ time * race_white + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * race_white + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concern about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * race_white + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * race_white + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+\
+
+#### Race or ethnicity (Black vs. Non-Black)
+**Summary**: Black officers did not consistently differ from Non-Black officers in training effects. (Significant effect(s): 0/4 models).
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Knowledge
+`r knitr::kable(summary(lmer(knowledge ~ time * race_black + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * race_black + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concern about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * race_black + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * race_black + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+\
+
+#### Gender (Male vs. Female)
+**Summary**: Female officers learned more about bias and showed stronger intentions to use strategies relative to baseline. 2/4 models significant
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Knowledge
+`r knitr::kable(summary(lmer(knowledge ~ time * gender_d + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * gender_d + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concern about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * gender_d + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * gender_d + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+\
+
+#### Level of education (Bachelor's Degree or above vs. No Bachelor's Degree)
+**Summary**: Officers with a bachelor's degree were more likely to intend to use the strategies. 1/4 models significant
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Knowledge
+`r knitr::kable(summary(lmer(knowledge ~ time * education_ba + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * education_ba + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concern about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * education_ba + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * education_ba + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+\
+
+#### Perceived feasibility, efficacy, and motivation to use strategies (for intended & actual strategy use only) (continuous)
+**Summary**: Perceptions of the strategies  moderated intentions or actual strategy use. 3/3 models significant
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Perceived Knowledge
+`r knitr::kable(summary(lmer(strategy ~ time * strat_know + (1|id), data = t1t2LongStratKnowT1))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Efficacy
+`r knitr::kable(summary(lmer(strategy ~ time * strat_efficacy + (1|id), data = t1t2LongStratEfficacyT1))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Motivation
+`r knitr::kable(summary(lmer(strategy ~ time * strat_mot + (1|id), data = t1t2LongStratMotT1))$coefficients, digits = c(2, 2, 2, 2, 3))`
+
+#### Knowledge of bias (for all key outcomes except themselves) (continuous)
+**Summary**: Officers with greater baseline knowledge of bias showed less of a decrease in perceived malleability of bias at Time 2, which may be attributable to lower perceived malleability in bias to begin with. Officers with greater baseline knowledge also showed smaller gains in concerns about bias, which may also be attributable to greater baseline concerns. Overall, these findings indicate  a "leveling" between people who were less knowledgeable and more knowledge about bias at baseline. That would suggest the training is more effective for officers who knew less about bias to begin with.
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * knowledge + (1|id), data = t1t2LongKnowledgeT1))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concerns about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * knowledge + (1|id), data = t1t2LongKnowledgeT1))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * knowledge + (1|id), data = t1t2LongKnowledgeT1))$coefficients, digits = c(2, 2, 2, 2, 3))`
+
+\
+
+#### Perceived malleability of bias (for all key outcomes except themselves) (continuous)
+**Summary**: Officers who perceived bias to be more malleable at baseline showed larger gains in knowledge, concerns about bias, and intentions to use strategies to mitigate bias at Time 2. However, these effects did not seem to persist through Time 3.
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Knowledge of Bias
+`r knitr::kable(summary(lmer(knowledge ~ time * theories + (1|id), data = t1t2LongTheoriesT1))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concerns about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * theories + (1|id), data = t1t2LongTheoriesT1))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * theories + (1|id), data = t1t2LongTheoriesT1))$coefficients, digits = c(2, 2, 2, 2, 3))`
+
+\
+
+#### Concern about bias (for all key outcomes except themselves) (continuous)
+**Summary**: Officers who were more concerned about bias at baseline showed smaller increases in knowledge of bias at Time 2, which may bias may be attributable to higher  baseline knowledge of bias at Time 1. Officers who were more concerned about bias at baseline also showed larger increases in the perceived malleability of bias at Time 2, which may reflect learning about strategies to mitigate bias.
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Knowledge of Bias
+`r knitr::kable(summary(lmer(knowledge ~ time * biasworry + (1|id), data = t1t2LongBiasworryT1))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * biasworry + (1|id), data = t1t2LongBiasworryT1))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * biasworry + (1|id), data = t1t2LongBiasworryT1))$coefficients, digits = c(2, 2, 2, 2, 3))`
+
+\
+
+### Characteristics of Educators
+
+```{r educator descriptives}
+freq(sessioninfo$facilduo_gender)
+freq(sessioninfo$facilduo_race)
+freq(sessioninfo$facilduo_relatedle_nole)
+```
+
+#### Number of attendees (continuous)
+**Summary**: Larger classes generally did not matter. The one exception was that larger classes were linked to slightly larger increases in concern about bias at Time 2 (ps = .039). (Significant effect(s): 1/4 models).
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Knowledge
+`r knitr::kable(summary(lmer(knowledge ~ time * attendance + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * attendance + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concern about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * attendance + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * attendance + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+
+\
+
+#### Facilitator pair gender (male-male, male-female, female-female)
+**Summary**: The gender of facilitators mattered when it was female-female. (Significant effect(s): 2/4 models).
+
+In Study 2, some sessions had only 1 trainer (5 participants in t1t2, 0 in all 3 timepoints). They had been excluded from analyses involving gender.
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Knowledge
+`r knitr::kable(summary(lmer(knowledge ~ time * facilduo_gender + (1|id), data = t1t2Long, contrasts = list(facilduo_gender=contr.treatment(3, base=2))))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * facilduo_gender + (1|id), data = t1t2Long, contrasts = list(facilduo_gender=contr.treatment(3, base=2))))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concern about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * facilduo_gender + (1|id), data = t1t2Long, contrasts = list(facilduo_gender=contr.treatment(3, base=2))))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * facilduo_gender + (1|id), data = t1t2Long, contrasts = list(facilduo_gender=contr.treatment(3, base=2))))$coefficients, digits = c(2, 2, 2, 2, 3))`
+
+```{r follow-up analyses of facilduo_gender}
+summary(lmer(knowledge ~ time * facilduo_gender + (1|id), data = t1t2Long, contrasts = list(facilduo_gender=contr.treatment(3, base=3))))
+
+summary(lmer(theories ~ time * facilduo_gender + (1|id), data = t1t2Long, contrasts = list(facilduo_gender=contr.treatment(3, base=3))))
+
+summary(lmer(biasworry ~ time * facilduo_gender + (1|id), data = t1t2Long, contrasts = list(facilduo_gender=contr.treatment(3, base=3))))
+
+summary(lmer(strategy ~ time * facilduo_gender + (1|id), data = t1t2Long, contrasts = list(facilduo_gender=contr.treatment(3, base=3))))
+
+
+plot_model(lm(knowledge ~ time*facilduo_gender,data=t1t2Long), type="pred", 
+           terms=c("time", "facilduo_gender"))
+plot_model(lm(biasworry ~ time*facilduo_gender,data=t1t2Long), type="pred", 
+           terms=c("time", "facilduo_gender"))
+```
+
+\
+
+#### Facilitator pair race (Black-White, White-White, or Asian-Black/White)
+**Summary**: The race of facilitator pairs generally did not matter. (Significant effect(s): 0/4 models).
+
+In Study 2, some sessions had only 1 trainer (5 participants in t1t2, 0 in all 3 timepoints). They had been excluded from analyses involving gender. When look at all three timepoints, only one person had a facilitator pair that was neither White nor Black. I excluded them. There were far fewer White-White pairs in Study 2.
+
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Knowledge
+`r knitr::kable(summary(lmer(knowledge ~ time * facilduo_race + (1|id), data = t1t2Long, contrasts = list(facilduo_race=contr.treatment(3, base=2))))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * facilduo_race + (1|id), data = t1t2Long, contrasts = list(facilduo_race=contr.treatment(3, base=2))))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concern about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * facilduo_race + (1|id), data = t1t2Long, contrasts = list(facilduo_race=contr.treatment(3, base=2))))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * facilduo_race + (1|id), data = t1t2Long, contrasts = list(facilduo_race=contr.treatment(3, base=2))))$coefficients, digits = c(2, 2, 2, 2, 3))`
+
+\
+
+#### Whether the facilitator pair contained an ex-member of law enforcement (Yes vs. No)
+**Summary**: Whether a facilitator was ex-law enforcement mattered. (Significant effect(s): 3/4 models).
+
+##### Time 1 to Time 2 (total N = 3764)
+<details><summary>Summary tables</summary>
+Knowledge
+`r knitr::kable(summary(lmer(knowledge ~ time * facilduo_le + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * facilduo_le + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concern about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * facilduo_le + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * facilduo_le + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+
+\
+
+#### Whether the facilitator pair contained someone who had a connection to law enforcement 
+**Summary**: Whether a facilitator had someone who had a connection to ex-law enforcement did not generally matter over-and-above a member of ex-law enforcement.
+
+
+##### Time 1 to Time 2 (total N = 3764) [Yes vs. No, including ex-law enforcement]
+<details><summary>Summary tables</summary>
+Knowledge
+`r knitr::kable(summary(lmer(knowledge ~ time * facilduo_relatedle + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * facilduo_relatedle + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concern about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * facilduo_relatedle + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * facilduo_relatedle + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+
+
+##### Time 1 to Time 2 (total N = 3764) [Yes vs. No (excluding ex-law enforcement)]
+<details><summary>Summary tables</summary>
+Knowledge
+`r knitr::kable(summary(lmer(knowledge ~ time * facilduo_relatedle_nole + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Perceived Malleability of Bias
+`r knitr::kable(summary(lmer(theories ~ time * facilduo_relatedle_nole + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Concern about Bias
+`r knitr::kable(summary(lmer(biasworry ~ time * facilduo_relatedle_nole + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+Strategy Use / Intentions
+`r knitr::kable(summary(lmer(strategy ~ time * facilduo_relatedle_nole + (1|id), data = t1t2Long))$coefficients, digits = c(2, 2, 2, 2, 3))`
+</details>
+
+\
+\

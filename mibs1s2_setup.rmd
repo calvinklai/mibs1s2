@@ -1,13 +1,18 @@
 ---
 title: "MIB for Law Enforcement - Setting up Combined Sample"
 author: "Dr. Calvin Lai"
-date: "07/03/2021"
+date: "07/23/2021"
 output:
   html_document: default
   pdf_document: default
   word_document: default
 always_allow_html: yes
 ---
+
+# TO DO: 
+# Create a combined S1T1 + S2T1 without T1T2 for differential attrition analyses
+<!-- # t1_no_t1t2 <- anti_join(t1, t1t2, by = "id") %>% select(knowledge.t1, theories.t1, biasworry.t1, respect, centrality, strategy_use,
+                         # frequency_black, frequency_asian, frequency_hispanic, frequency_gay, frequency_trans, yearsworked, race_white, race_black, gender_d, rank, yearsworked) -->
 
 ```{r setup, include = FALSE}
 # Package names
@@ -57,15 +62,24 @@ s2t1t2 <- s2t1t2 %>% dplyr::rename(
   race.s2 = race, gender.s2 = gender, education.s2 = education)
 s2t1t2 <- s2t1t2 %>% mutate(sample = 2)
 
+# Creating full dataset
+t1t2 <- full_join(s1t1t2,s2t1t2)
+freq(t1t2$race.s1)
+freq(t1t2$race.s2)
 
-# STOPPED HERE. Created a full merge. Need to see if more cleaning is needed. If not, then I can start running analyses.
-temp <- full_join(s1t1t2,s2t1t2)
-
-
-# Haven't reviewed the code below.
-
-
-# Creating long data for long analyses: All time points
+# Creating race var
+t1t2 <- t1t2 %>% mutate(
+  race = case_when(
+    is.na(race.s1) == F  ~ race.s1,
+    race.s2 == 1 ~ "white",
+    race.s2 == 2 ~ "black",
+    race.s2 == 3 ~ "hispanic",
+    race.s2 == 4 ~ "asian",
+    race.s2 == 5 ~ "multi"    
+  )
+)
+  
+# Creating long data for long analyses: T1 + T2
 timePivot <- function(data){
   data %>%  pivot_longer(
              cols = ends_with(c("t1", "t2", "t3")), 
@@ -73,46 +87,24 @@ timePivot <- function(data){
              select(id, time, everything())
 }
 
-allLong <- all %>% select(id, 
-                          knowledge.t1, theories.t1, strategy_use, biasworry.t1, 
-                          knowledge.t2, theories.t2, biasworry.t2, 
-                          strategy_intend, strat_know.t2, strat_efficacy.t2, strat_mot.t2, 
-                          knowledge.t3, theories.t3, biasworry.t3, 
-                          strategy_used, strat_know.t3, strat_efficacy.t3, strat_mot.t3,                           
-                          frequency_black, frequency_hispanic, frequency_asian,
-                          frequency_gay, frequency_trans,
-                          respect, centrality, yearsworked, rank,  
-                          race_white, race_black, gender_d, education_ba,
-                          attendance, facilduo_gender, facilduo_race, 
-                          facilduo_le, facilduo_relatedle, facilduo_relatedle_nole) %>% 
-                          dplyr::rename(strategy.t1 = strategy_use, 
-                                 strategy.t2 = strategy_intend,
-                                 strategy.t3 = strategy_used)
-
-allLongKnowledgeT1 <- allLong %>% dplyr::rename(knowledge = knowledge.t1) %>% 
-  select(c(-knowledge.t2, -knowledge.t3)) %>% timePivot()
-                        
-allLongTheoriesT1 <- allLong %>% dplyr::rename(theories = theories.t1) %>% 
-  select(c(-theories.t2, -theories.t3)) %>% timePivot()
-
-allLongBiasworryT1 <- allLong %>% dplyr::rename(biasworry = biasworry.t1) %>% 
-  select(c(-biasworry.t2, -biasworry.t3)) %>% timePivot()                                            
-
-allLong <- allLong %>% timePivot()
-  
-# Creating long data for long analyses: T1 + T2
 t1t2Long <- t1t2 %>% select(id, 
                           knowledge.t1, theories.t1, strategy_use, biasworry.t1, 
                           knowledge.t2, theories.t2, biasworry.t2, 
-                          strategy_intend, strat_know.t2, strat_efficacy.t2, strat_mot.t2, 
+                          strategy_intend, strat_know.t2, strat_efficacy.t2, strat_mot.t2,                           
+                          substitution_use, substitution_intend,
+                          perspective_use, perspective_intend,
+                          mindful_use, mindful_intend, 
                           frequency_black, frequency_hispanic, frequency_asian,
                           frequency_gay, frequency_trans,
                           respect, centrality, yearsworked, rank,  
                           race_white, race_black, gender_d, education_ba,
                           attendance, facilduo_gender, facilduo_race, 
-                          facilduo_le, facilduo_relatedle, facilduo_relatedle_nole) %>% 
+                          facilduo_le, facilduo_relatedle, facilduo_relatedle_nole, sample) %>% 
                           dplyr::rename(strategy.t1 = strategy_use, 
-                                 strategy.t2 = strategy_intend)
+                                 strategy.t2 = strategy_intend,
+                                 substitution.t1 = substitution_use, substitution.t2 = substitution_intend,
+                                 perspective.t1 = perspective_use, perspective.t2 = perspective_intend,
+                                 mindful.t1 = mindful_use, mindful.t2 = mindful_intend)
 
 t1t2LongKnowledgeT1 <- t1t2Long %>% dplyr::rename(knowledge = knowledge.t1) %>% 
   select(c(-knowledge.t2)) %>% timePivot()
@@ -121,183 +113,101 @@ t1t2LongTheoriesT1 <- t1t2Long %>% dplyr::rename(theories = theories.t1) %>%
   select(c(-theories.t2)) %>% timePivot()
 
 t1t2LongBiasworryT1 <- t1t2Long %>% dplyr::rename(biasworry = biasworry.t1) %>% 
-  select(c(-biasworry.t2)) %>% timePivot()          
+  select(c(-biasworry.t2)) %>% timePivot()    
+
+t1t2LongStratKnowT1 <- t1t2Long %>% dplyr::rename(strat_know = strat_know.t2)  %>% timePivot()          
+t1t2LongStratEfficacyT1 <- t1t2Long %>% dplyr::rename(strat_efficacy = strat_efficacy.t2)  %>% timePivot()          
+t1t2LongStratMotT1 <- t1t2Long %>% dplyr::rename(strat_mot = strat_mot.t2)  %>% timePivot()      
 
 t1t2Long <- t1t2Long %>% timePivot()
  
-# Creating long data for long analyses: T1 + T3
-t1t3Long <- t1t3 %>% select(id, 
-                          knowledge.t1, theories.t1, strategy_use, biasworry.t1, 
-                          knowledge.t3, theories.t3, biasworry.t3, 
-                          strategy_used, strat_know.t3, strat_efficacy.t3, strat_mot.t3,                           
-                          substitution_use, substitution_used, 
-                          perspective_use, perspective_used,
-                          exposure_use, exposure_used,
-                          individuation_use, individuation_used,
-                          mindful_use, mindful_used,
-                          frequency_black, frequency_hispanic, frequency_asian,
-                          frequency_gay, frequency_trans,
-                          respect, centrality, yearsworked, rank,  
-                          race_white, race_black, gender_d) %>% 
-                          dplyr::rename(
-                                 strategy.t1 = strategy_use, strategy.t3 = strategy_used,
-                                 substitution.t1 = substitution_use, substitution.t3 = substitution_used,
-                                 perspective.t1 = perspective_use, perspective.t3 = perspective_used,
-                                 exposure.t1 = exposure_use, exposure.t3 = exposure_used,
-                                 individuation.t1 = individuation_use, individuation.t3 = individuation_used,
-                                 mindful.t1 = mindful_use, mindful.t3 = mindful_used,
-                                 strat_know = strat_know.t3, 
-                                 strat_efficacy = strat_efficacy.t3, strat_mot = strat_mot.t3
-                                 )
+# Merging session info files
+s1sessioninfo <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_sessioninfo-clean.csv", guess_max = min(12000))
+s2sessioninfo <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mibstudy2_sessioninfo-clean.csv", guess_max = min(12000))
+combined_sessioninfo <- full_join(s1sessioninfo,s2sessioninfo)
 
-t1t3Long <- t1t3Long %>% timePivot()
+# Saving files
+write_csv(t1t2, "C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2.csv")
+write_csv(t1t2Long, "C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long.csv")
+write_csv(t1t2LongBiasworryT1, "C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_biasworryt1.csv")
+write_csv(t1t2LongKnowledgeT1, "C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_knowledget1.csv")
+write_csv(t1t2LongTheoriesT1, "C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_theoriest1.csv")
+write_csv(t1t2LongStratKnowT1, "C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_stratknowt1.csv")
+write_csv(t1t2LongStratEfficacyT1, "C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_stratefficacyt1.csv")
+write_csv(t1t2LongStratMotT1, "C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_stratmott1.csv")
+write_csv(combined_sessioninfo, "C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_sessioninfo.csv")
 
-# Creating long data for long analyses: T2 + T3
-t2t3Long <- t2t3 %>% select(id, 
-                          knowledge.t2, theories.t2, biasworry.t2, 
-                          strategy_intend, strat_know.t2, strat_efficacy.t2, strat_mot.t2, 
-                          knowledge.t3, theories.t3, biasworry.t3, 
-                          strategy_used, strat_know.t3, strat_efficacy.t3, strat_mot.t3,                           
-                          attendance, facilduo_gender, facilduo_race, 
-                          facilduo_le, facilduo_relatedle, facilduo_relatedle_nole) %>% 
-                          dplyr::rename(strategy.t2 = strategy_intend,
-                                 strategy.t3 = strategy_used)
+```
 
-t2t3Long <- t2t3Long %>% timePivot()
-
+```{r differential attrition}
+##### Differential Attrition Setup ----
 # Creating cohen d round function
 cohensd <- function(group1, group2){
   round(effsize::cohen.d(group2, group1, na.rm = T)$estimate, 2)
 }
 
+# Creating combined  T1 for assessing differential attrition
+s1t1 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_t1-clean.csv", guess_max = min(12000))
+s2t1 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mibstudy2_t1-clean.csv", guess_max = min(12000))
+
+# Removing non-shared variables
+s1t1 <- s1t1 %>% dplyr::select(-c(initials.t1, notes.t1, 
+                                      session_id.t1))
+s2t1 <- s2t1 %>% dplyr::select(-c(
+  DistributionChannel, duration, EndDate, 
+  Finished, id3_middle_street, 
+  id3_mom_middle, id3_mom_month, id3_mom_street, 
+  id3_month_middle, id3_month_street, id3_siblings_middle, 
+  id3_siblings_mom,  id3_siblings_month, 
+  id3_siblings_street, Progress,
+  RecordedDate, ResponseId, StartDate, 
+  Status, UserLanguage))
+
+# Creating special versions for variables that differed in variable type between the two datasets.
+s1t1 <- s1t1 %>% dplyr::rename(
+  id_siblings.t1.s1 = id_siblings.t1, id_mom.t1.s1 = id_mom.t1, id_month.t1.s1 = id_month.t1, id_middle.t1.s1 = id_middle.t1, 
+  race.s1 = race, gender.s1 = gender, education.s1 = education)
+s1t1 <- s1t1 %>% mutate(sample = 1)
+s2t1 <- s2t1 %>% dplyr::rename(
+  id_siblings.t1.s2 = id_siblings.t1, id_mom.t1.s2 = id_mom.t1, id_month.t1.s2 = id_month.t1, id_middle.t1.s2 = id_middle.t1, 
+  race.s2 = race, gender.s2 = gender, education.s2 = education)
+s2t1 <- s2t1 %>% mutate(sample = 2)
+
+# Combining the T1 samples
+t1 <- full_join(s1t1,s2t1)
+write_csv(t1, "C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1.csv")
+
 # Creating datasets for assessing differential attrition
 # extra yearsworked at the end, but it doesn't matter. Didn't fix since it didn't cause problems
 t1_no_t1t2 <- anti_join(t1, t1t2, by = "id") %>% select(knowledge.t1, theories.t1, biasworry.t1, respect, centrality, strategy_use,
-                         frequency_black, frequency_asian, frequency_hispanic, frequency_gay, frequency_trans, yearsworked, race_white, race_black, gender_d, rank, yearsworked)
-t1_no_t1t3 <- anti_join(t1, t1t3, by = "id") %>% select(knowledge.t1, theories.t1, biasworry.t1, respect, centrality, strategy_use,
-                         frequency_black, frequency_asian, frequency_hispanic, frequency_gay, frequency_trans, yearsworked, race_white, race_black, gender_d, rank, yearsworked)
-t1_no_all <- anti_join(t1, all, by = "id") %>% select(knowledge.t1, theories.t1, biasworry.t1, respect, centrality, strategy_use,
-                         frequency_black, frequency_asian, frequency_hispanic, frequency_gay, frequency_trans, yearsworked, race_white, race_black, gender_d, rank, yearsworked)
+                         frequency_black, frequency_asian, frequency_hispanic, frequency_gay, frequency_trans, yearsworked, race_white, race_black, gender_d, rank, yearsworked, education_ba)
+
 temp_t1t2 <- t1t2 %>% select(knowledge.t1, theories.t1, biasworry.t1, respect, centrality, strategy_use,
-                         frequency_black, frequency_asian, frequency_hispanic, frequency_gay, frequency_trans, yearsworked, race_white, race_black, gender_d, rank, yearsworked)
-temp_t1t3 <- t1t3 %>% select(knowledge.t1, theories.t1, biasworry.t1, respect, centrality, strategy_use,
-                         frequency_black, frequency_asian, frequency_hispanic, frequency_gay, frequency_trans, yearsworked, race_white, race_black, gender_d, rank, yearsworked)
-temp_all <- all %>% select(knowledge.t1, theories.t1, biasworry.t1, respect, centrality, strategy_use,
-                         frequency_black, frequency_asian, frequency_hispanic, frequency_gay, frequency_trans, yearsworked, race_white, race_black, gender_d, rank, yearsworked)
+                         frequency_black, frequency_asian, frequency_hispanic, frequency_gay, frequency_trans, yearsworked, race_white, race_black, gender_d, rank, yearsworked, education_ba)
 
 # Creating function for checking differential attrition
 attritionCheck <- function(group1, group2) {
-  output <- data.frame(nrow(length(group1)), ncol(8))
+  output <- data.frame(nrow(length(group1)), ncol(10))
   for(i in 1:length(group1)) {
     output[i, 1] <- names(group1[i]) # Variable name
     output[i, 2] <- cohensd(group1[[i]], group2[[i]]) # Cohen's d
     output[i, 3] <- t.test(group1[i], group2[i])[3] # p-value
     output[i, 3] <- round(as.numeric(output[i, 3]), 4)
-    output[i, 4] <- round(mean(group1[[i]], na.rm = T), 2) # m1
-    output[i, 5] <- round(mean(group2[[i]], na.rm = T), 2) # m2
-    output[i, 6] <- round(sd(group1[[i]], na.rm = T), 2) # sd1
-    output[i, 7] <- round(sd(group2[[i]], na.rm = T), 2) # sd2
-    output[i, 8] <- if_else(as.numeric(output[i, 3]) < .05, "*", "")
-}
-colnames(output) <- c("variable", "cohens d", "p-value", "m1", "m2", "sd1", "sd2", "sig")
+    output[i, 4] <- p.adjust(t.test(group1[i], group2[i])[3], method="BH", n = length(group1)) # adjusted p-value
+    output[i, 4] <- round(as.numeric(output[i, 4]), 4)    
+    output[i, 5] <- round(mean(group1[[i]], na.rm = T), 2) # m1
+    output[i, 6] <- round(mean(group2[[i]], na.rm = T), 2) # m2
+    output[i, 7] <- round(sd(group1[[i]], na.rm = T), 2) # sd1
+    output[i, 8] <- round(sd(group2[[i]], na.rm = T), 2) # sd2
+    output[i, 9] <- if_else(as.numeric(output[i, 3]) < .05, "*", "")
+    output[i, 10] <- if_else(as.numeric(output[i, 4]) < .05, "*", "")
+    
+  }
+colnames(output) <- c("variable", "cohens d", "p-value", "p-adj", "m1", "m2", "sd1", "sd2", "sig", "sig-adj")
 output  
 }
-```
 
-
-### Participants, Combined Sample
-
-Participants were sworn officers of a police department or departments within the United States who took part in a training session between September 2020 and January 2021. We collected `r dim(t1)[1]` surveys from Time 1  (average of 66 days before  training; range = 1 to 144 days), `r dim(t2)[1]` surveys from Time 2 (end of the day, after the training session), and `r dim(t3)[1]` surveys from Time 3 (average of 32 days after training; range = 32 to 48 days). 
-
-Participants had worked an average of `r round(mean(t1t2$yearsworked, na.rm=T), 0)` years in the department, with `r round((prop.table(table(t1t2$yearsworked_5y))[2]) * 100, 0)`% having worked in the department for 5 years or more. `r round(prop.table(table(t1t2$rank))[1] * 100, 0)`% of participants were below Sergeant rank, `r round(prop.table(table(t1t2$gender_d))[2] * 100, 0)`% were male, and `r round(prop.table(table(t1t2$education_ba))[2] * 100, 0)`% had a bachelor's degree or higher. Of the `r round(prop.table(table(is.na(t1t2$race)))[1] * 100, 0)`% participants that reported their race, `r round((prop.table(table(t1t2$race))[1]) * 100, 0)`% were White, `r round((prop.table(table(t1t2$race))[2]) * 100, 0)`% were Black, `r round((prop.table(table(t1t2$race))[3]) * 100, 0)`% were Hispanic/Latino, `r round((prop.table(table(t1t2$race))[4]) * 100, 0)`% were Asian, and `r round((prop.table(table(t1t2$race))[5]) * 100, 0)`% were multi-racial.
-
-### Baseline characteristics, Combined Sample
-```{r baseline statistics, echo=F, warning=F, message=F}
-freq(t1t2$frequency_white)
-freq(t1t2$frequency_black)
-freq(t1t2$frequency_hispanic)
-freq(t1t2$frequency_asian)
-freq(t1t2$frequency_trans)
-freq(t1t2$frequency_gay)
-
-# NOTE: Cohen's d and t-tests were not used in reporting.
-# Knowledge
-t.test(t1t2$knowledge.t1, mu = 1)
-sd(t1t2$knowledge.t1,na.rm=T)
-effsize::cohen.d(t1t2$knowledge.t1, f = NA, mu =1, na.rm = T)
-freq(t1t2$knowledge.t1)
-
-# Concern
-t.test(t1t2$biasworry.t1, mu = 1)
-sd(t1t2$biasworry.t1,na.rm=T)
-effsize::cohen.d(t1t2$biasworry.t1, f = NA, mu =1, na.rm = T)
-freq(t1t2$biasworry.t1)
-
-# Strategy Use
-t.test(t1t2$strategy_use)
-sd(t1t2$strategy_use,na.rm=T)
-effsize::cohen.d(t1t2$strategy_use, f = NA, mu =0, na.rm = T)
-freq(t1t2$strategy_use)
-
-freq(t1t2$perspective_use)
-freq(t1t2$mindful_use)
-freq(t1t2$substitution_use)
-freq(t1t2$exposure_use)
-freq(t1t2$individuation_use)
-
-
-
-# Internal survey calculations
-
-# 1)	Whether the facilitators were knowledgeable, credible, and engaging on a scale from 1 (Strongly agree) to 7 (Strongly disagree). 
-psych::m2t(1.35,1.70,.78,1.09,n1=3629,n2=2103) 
-t2d(14.09422,n1=3629,n2=2103)
-
-# 5)	Whether officers would use information from the workshop in their work or personal life on a scale from 1 (Strongly agree) to 7 (Strongly disagree). 
-psych::m2t(1.95, 2.26,1.29,1.45,n1=3626,n2=2103) 
-t2d(8.37,n1=3626,n2=2103)
-```
-
-### General perceptions of bias, Combined Sample
-```{r Combined Sample  General perceptions of bias, echo=F, warning=F, message=F}
-lmer.null <- summary(lmer(knowledge ~ (1|id), data = t1t2Long))
-
-anova(lmer(knowledge ~ time + (1|id), data = t1t2Long), lmer.null)
-summary(lmer(knowledge ~ time + (1|id), data = t1t2Long))
-effsize::cohen.d(t1t2$knowledge.t2, t1t2$knowledge.t1, paired=T, na.rm = T)
-
-summary(lmer(biasworry ~ time + (1|id), data = t1t2Long))
-effsize::cohen.d(t1t2$biasworry.t2, t1t2$biasworry.t1, paired=T, na.rm = T)
-
-summary(lmer(theories ~ time + (1|id), data = t1t2Long))
-effsize::cohen.d(t1t2$theories.t2, t1t2$theories.t1, paired=T, na.rm = T)
-
-```
-
-### Strategies to manage bias, Combined Sample
-```{r Combined Sample  strategies to manage bias, echo=F, warning=F, message=F}
-# know
-t.test(t1t2$strat_know.t2, mu = 1)
-sd(t1t2$strat_know.t2,na.rm=T)
-effsize::cohen.d(t1t2$strat_know.t2, f = NA, mu =1, na.rm = T)
-freq(t1t2$strat_know.t2)
-
-# Efficacy
-t.test(t1t2$strat_efficacy.t2, mu = 1)
-sd(t1t2$strat_efficacy.t2,na.rm=T)
-effsize::cohen.d(t1t2$strat_efficacy.t2, f = NA, mu =1, na.rm = T)
-freq(t1t2$strat_efficacy.t2)
-
-# Motivation
-t.test(t1t2$strat_mot.t2, mu = 1)
-sd(t1t2$strat_mot.t2,na.rm=T)
-effsize::cohen.d(t1t2$strat_mot.t2, f = NA, mu =1, na.rm = T)
-freq(t1t2$strat_mot.t2)
-
-# Strategy intentions
-summary(lmer(strategy ~ time + (1|id), data = t1t2Long))
-effsize::cohen.d(t1t2$strategy_intend, t1t2$strategy_use, paired=T, na.rm = T)
-mean(t1t2$strategy_intend,na.rm=T)
+attritionCheck(t1_no_t1t2, temp_t1t2)
 ```
 
 

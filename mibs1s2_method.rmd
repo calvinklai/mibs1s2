@@ -1,0 +1,166 @@
+---
+title: "MIB for Law Enforcement - Combined Sample - Methods"
+author: "Dr. Calvin Lai"
+date: "07/24/2021"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+always_allow_html: yes
+---
+
+```{r setup, include = FALSE}
+# Package names
+packages <- c("sjPlot",  "psych", "foreign", "tidyverse", "glue", "effsize", "cowplot", "lme4", "lmerTest", "corrplot", "summarytools", "effsize", "ggstatsplot", "ggthemes")
+
+# Install packages not yet installed
+installed_packages <- packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}
+
+# Packages loading
+invisible(lapply(packages, library, character.only = TRUE))
+rm(list = c("packages", "installed_packages"))
+
+# Data to load 
+t1t2 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2.csv", guess_max = min(12000))
+t1t2Long <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long.csv", guess_max = min(12000))
+t1t2LongBiasworryT1 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_biasworryt1.csv", guess_max = min(12000))
+t1t2LongKnowledgeT1 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_knowledget1.csv", guess_max = min(12000))
+t1t2LongTheoriesT1 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_theoriest1.csv", guess_max = min(12000))
+t1t2LongStratKnowT1 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_stratknowt1.csv", guess_max = min(12000))
+t1t2LongStratEfficacyT1 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_stratefficacyt1.csv", guess_max = min(12000))
+t1t2LongStratMotT1 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long_stratmott1.csv", guess_max = min(12000))
+```
+
+
+### Participants, Combined Sample
+
+Participants were sworn officers of a police department or departments within the United States who took part in a training session. We collected `r dim(t1t2)[1]` surveys who completed Time 1 and Time 2.
+
+Participants had worked an average of `r round(mean(t1t2$yearsworked, na.rm=T), 0)` years in the department, with `r round((prop.table(table(t1t2$yearsworked_5y))[2]) * 100, 0)`% having worked in the department for 5 years or more. `r round(prop.table(table(t1t2$rank))[1] * 100, 0)`% of participants were below Sergeant rank, `r round(prop.table(table(t1t2$gender_d))[2] * 100, 0)`% were male, and `r round(prop.table(table(t1t2$education_ba))[2] * 100, 0)`% had a bachelor's degree or higher. Of the `r round(prop.table(table(is.na(t1t2$race)))[1] * 100, 0)`% of participants that reported their race, `r round((prop.table(table(t1t2$race))[5]) * 100, 0)`% were White, `r round((prop.table(table(t1t2$race))[2]) * 100, 0)`% were Black, `r round((prop.table(table(t1t2$race))[3]) * 100, 0)`% were Hispanic/Latino, `r round((prop.table(table(t1t2$race))[1]) * 100, 0)`% were Asian, and `r round((prop.table(table(t1t2$race))[4]) * 100, 0)`% were multi-racial.
+
+```{r intergroup contact, echo=F, warning=F, message=F}
+freq(t1t2$frequency_white)
+freq(t1t2$frequency_black)
+freq(t1t2$frequency_hispanic)
+freq(t1t2$frequency_asian)
+freq(t1t2$frequency_trans)
+freq(t1t2$frequency_gay)
+```
+
+### Reliability analyses
+```{r reliability analyses, echo=F, warning=F, message=F}
+# Time 1
+psych::alpha(t1t2 %>% select(knowledge_bias.t1, knowledge_race.t1, knowledge_culture.t1))$total$raw_alpha
+psych::alpha(t1t2 %>% select(theories1.t1, theories2.t1))$total$raw_alpha
+psych::alpha(t1t2 %>% select(biasworry_black.t1, biasworry_asian.t1, biasworry_hispanic.t1, biasworry_lgb.t1, biasworry_trans.t1))$total$raw_alpha
+psych::alpha(t1t2 %>% select(substitution_use, perspective_use, exposure_use, individuation_use, mindful_use))$total$raw_alpha
+
+psych::alpha(t1t2 %>% select(centrality1, centrality2, centrality3))$total$raw_alpha
+psych::alpha(t1t2 %>% select(respect1, respect2, respect3, respect4))$total$raw_alpha
+
+# Time 2
+psych::alpha(t1t2 %>% select(knowledge_bias.t2, knowledge_race.t2, knowledge_culture.t2))$total$raw_alpha
+psych::alpha(t1t2 %>% select(theories1.t2, theories2.t2))$total$raw_alpha
+psych::alpha(t1t2 %>% select(biasworry_black.t2, biasworry_asian.t2, biasworry_hispanic.t2, biasworry_lgb.t2, biasworry_trans.t2))$total$raw_alpha
+psych::alpha(t1t2 %>% select(substitution_intend, perspective_intend, exposure_intend, individuation_intend, mindful_intend))$total$raw_alpha
+
+psych::alpha(t1t2 %>% select(strat_efficacy.t2, strat_know.t2, strat_mot.t2))$total$raw_alpha
+
+# Time 3
+psych::alpha(all %>% select(knowledge_bias.t3, knowledge_race.t3, knowledge_culture.t3))$total$raw_alpha
+psych::alpha(all %>% select(theories1.t3, theories2.t3))$total$raw_alpha
+psych::alpha(all %>% select(biasworry_black.t3, biasworry_asian.t3, biasworry_hispanic.t3, biasworry_lgb.t3, biasworry_trans.t3))$total$raw_alpha
+psych::alpha(all %>% select(substitution_used, perspective_used, exposure_used, individuation_used, mindful_used))$total$raw_alpha
+
+psych::alpha(all %>% select(strat_efficacy.t3, strat_know.t3, strat_mot.t3))$total$raw_alpha
+```
+
+
+```{r temp}
+# NOTE: Cohen's d and t-tests were not used in reporting.
+# Knowledge
+t.test(t1t2$knowledge.t1, mu = 1)
+sd(t1t2$knowledge.t1,na.rm=T)
+effsize::cohen.d(t1t2$knowledge.t1, f = NA, mu =1, na.rm = T)
+freq(t1t2$knowledge.t1)
+
+# Concern
+t.test(t1t2$biasworry.t1, mu = 1)
+sd(t1t2$biasworry.t1,na.rm=T)
+effsize::cohen.d(t1t2$biasworry.t1, f = NA, mu =1, na.rm = T)
+freq(t1t2$biasworry.t1)
+
+# Strategy Use
+t.test(t1t2$strategy_use)
+sd(t1t2$strategy_use,na.rm=T)
+effsize::cohen.d(t1t2$strategy_use, f = NA, mu =0, na.rm = T)
+freq(t1t2$strategy_use)
+
+freq(t1t2$perspective_use)
+freq(t1t2$mindful_use)
+freq(t1t2$substitution_use)
+freq(t1t2$exposure_use)
+freq(t1t2$individuation_use)
+
+
+
+# Internal survey calculations
+
+# 1)	Whether the facilitators were knowledgeable, credible, and engaging on a scale from 1 (Strongly agree) to 7 (Strongly disagree). 
+psych::m2t(1.35,1.70,.78,1.09,n1=3629,n2=2103) 
+t2d(14.09422,n1=3629,n2=2103)
+
+# 5)	Whether officers would use information from the workshop in their work or personal life on a scale from 1 (Strongly agree) to 7 (Strongly disagree). 
+psych::m2t(1.95, 2.26,1.29,1.45,n1=3626,n2=2103) 
+t2d(8.37,n1=3626,n2=2103)
+```
+
+```
+
+
+### General perceptions of bias, Combined Sample
+```{r Combined Sample  General perceptions of bias, echo=F, warning=F, message=F}
+lmer.null <- summary(lmer(knowledge ~ (1|id), data = t1t2Long))
+
+anova(lmer(knowledge ~ time + (1|id), data = t1t2Long), lmer.null)
+summary(lmer(knowledge ~ time + (1|id), data = t1t2Long))
+effsize::cohen.d(t1t2$knowledge.t2, t1t2$knowledge.t1, paired=T, na.rm = T)
+
+summary(lmer(biasworry ~ time + (1|id), data = t1t2Long))
+effsize::cohen.d(t1t2$biasworry.t2, t1t2$biasworry.t1, paired=T, na.rm = T)
+
+summary(lmer(theories ~ time + (1|id), data = t1t2Long))
+effsize::cohen.d(t1t2$theories.t2, t1t2$theories.t1, paired=T, na.rm = T)
+
+```
+
+### Strategies to manage bias, Combined Sample
+```{r Combined Sample  strategies to manage bias, echo=F, warning=F, message=F}
+# know
+t.test(t1t2$strat_know.t2, mu = 1)
+sd(t1t2$strat_know.t2,na.rm=T)
+effsize::cohen.d(t1t2$strat_know.t2, f = NA, mu =1, na.rm = T)
+freq(t1t2$strat_know.t2)
+
+# Efficacy
+t.test(t1t2$strat_efficacy.t2, mu = 1)
+sd(t1t2$strat_efficacy.t2,na.rm=T)
+effsize::cohen.d(t1t2$strat_efficacy.t2, f = NA, mu =1, na.rm = T)
+freq(t1t2$strat_efficacy.t2)
+
+# Motivation
+t.test(t1t2$strat_mot.t2, mu = 1)
+sd(t1t2$strat_mot.t2,na.rm=T)
+effsize::cohen.d(t1t2$strat_mot.t2, f = NA, mu =1, na.rm = T)
+freq(t1t2$strat_mot.t2)
+
+# Strategy intentions
+summary(lmer(strategy ~ time + (1|id), data = t1t2Long))
+effsize::cohen.d(t1t2$strategy_intend, t1t2$strategy_use, paired=T, na.rm = T)
+mean(t1t2$strategy_intend,na.rm=T)
+```
+
+

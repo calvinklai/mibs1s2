@@ -1,0 +1,203 @@
+---
+title: "MIB for Law Enforcement - Exploratory Extreme Bound Analyses"
+author: "Dr. Calvin Lai"
+date: "07/28/2021"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+always_allow_html: yes
+---
+
+```{r setup, include = FALSE}
+# Package names
+packages <- c("sjPlot",  "psych", "foreign", "tidyverse", "glue", "effsize", "cowplot", "lme4", "lmerTest", "corrplot", "summarytools", "effsize", "ggstatsplot", "ggthemes")
+
+# Install packages not yet installed
+installed_packages <- packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}
+
+# Packages loading
+invisible(lapply(packages, library, character.only = TRUE))
+rm(list = c("packages", "installed_packages"))
+
+# Functions
+timePivot <- function(data){
+  data %>%  pivot_longer(
+             cols = ends_with(c("t1", "t2", "t3")), 
+             names_to=(c(".value", "time")), names_sep = ".t(?=\\d)") %>%
+             select(id, time, everything())
+}
+
+convertLong <- function(dataset ){
+                          dataset %>% select(id, 
+                          knowledge.t1, theories.t1, strategy_use, biasworry.t1, 
+                          knowledge.t2, theories.t2, biasworry.t2, 
+                          strategy_intend, strat_know.t2, strat_efficacy.t2, strat_mot.t2, 
+                          frequency_black, frequency_hispanic, frequency_asian,
+                          frequency_gay, frequency_trans,
+                          respect, centrality, yearsworked, rank,  
+                          race_white, race_black, gender_d, education_ba,
+                          attendance, facilduo_gender, facilduo_race, 
+                          facilduo_le, facilduo_relatedle, facilduo_relatedle_nole) %>% 
+                          dplyr::rename(strategy.t1 = strategy_use, 
+                                 strategy.t2 = strategy_intend) %>% 
+                          timePivot()
+}
+
+knowledgeMixed <- function(dataset){
+  print(lmer.null <- summary(lmer(knowledge ~ (1|id), data = dataset)))
+  print(anova(lmer(knowledge ~ time + (1|id), data = dataset), lmer.null))
+  print(summary(lmer(knowledge ~ time + (1|id), data = dataset)))
+}
+
+
+# Data to load 
+t1t2 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2.csv", guess_max = min(12000))
+t1t2Long <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2_long.csv", guess_max = min(12000))
+```
+
+```{r S1 extreme bounds analyses}
+# Code adapted from https://www.povertyactionlab.org/resource/data-analysis
+
+# Loading data
+t1<- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_t1-clean.csv", guess_max = min(12000))
+t1t2<- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_all-time1-2.csv", guess_max = min(12000))
+
+t1_no_t1t2_full <- anti_join(t1, t1t2, by = "id") 
+t1t2_ebounds <- full_join(t1t2, t1_no_t1t2_full)
+
+# Generating minimum and maximum values of the outcome
+hm_upperbound_value <- max(t1t2_ebounds$knowledge.t2, na.rm = T)
+hm_lowerbound_value <- min(t1t2_ebounds$knowledge.t2, na.rm = T)
+
+# To create upper bounds: replace missing outcome values of 
+## treatment group with the highest observed outcome and missing 
+## outcome values of control group with lowest observed outcome values
+t1t2_ebounds <- t1t2_ebounds %>%
+  mutate(hm_upperbound = ifelse(is.na(knowledge.t2),hm_upperbound_value,knowledge.t2))
+
+# To create lower bounds: replace missing outcome values of 
+## treatment group with lowest observed and replace missing control 
+## outcome values with highest observed outcome
+t1t2_ebounds<-t1t2_ebounds %>%
+  mutate(hm_lowerbound = ifelse(is.na(knowledge.t2),hm_lowerbound_value,knowledge.t2))
+
+descr(t1t2_ebounds$knowledge.t2)
+descr(t1t2_ebounds$hm_upperbound)
+descr(t1t2_ebounds$hm_lowerbound)
+descr(t1t2_ebounds$knowledge.t1)
+
+# Creating long version of datasets
+t1t2Long <- t1t2_ebounds %>% convertLong()
+t1t2_upperboundLong <-  t1t2_ebounds %>%  mutate(knowledge.t2 = hm_upperbound) %>% convertLong()
+t1t2_lowerboundLong <- t1t2_ebounds %>%  mutate(knowledge.t2 = hm_lowerbound) %>% convertLong()
+
+# Mixed model analyses
+knowledgeMixed(t1t2Long) 
+knowledgeMixed(t1t2_upperboundLong) 
+knowledgeMixed(t1t2_lowerboundLong) 
+
+# Effect sizes for upper and lower bound
+effsize::cohen.d(t1t2_ebounds$knowledge.t2, t1t2_ebounds$knowledge.t1, paired=T, na.rm = T)
+effsize::cohen.d(t1t2_ebounds$hm_upperbound, t1t2_ebounds$knowledge.t1, paired=T, na.rm = T)
+effsize::cohen.d(t1t2_ebounds$hm_lowerbound, t1t2_ebounds$knowledge.t1, paired=T, na.rm = T)
+```
+
+```{r S2 extreme bounds analyses}
+# Code adapted from https://www.povertyactionlab.org/resource/data-analysis
+
+# Loading data
+t1<- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mibstudy2_t1-clean.csv", guess_max = min(12000))
+t1t2<- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mibstudy2_t1t2-clean.csv", guess_max = min(12000))
+
+t1_no_t1t2_full <- anti_join(t1, t1t2, by = "id") 
+t1t2_ebounds <- full_join(t1t2, t1_no_t1t2_full)
+
+# Generating minimum and maximum values of the outcome
+hm_upperbound_value <- max(t1t2_ebounds$knowledge.t2, na.rm = T)
+hm_lowerbound_value <- min(t1t2_ebounds$knowledge.t2, na.rm = T)
+
+# To create upper bounds: replace missing outcome values of 
+## treatment group with the highest observed outcome and missing 
+## outcome values of control group with lowest observed outcome values
+t1t2_ebounds <- t1t2_ebounds %>%
+  mutate(hm_upperbound = ifelse(is.na(knowledge.t2),hm_upperbound_value,knowledge.t2))
+
+# To create lower bounds: replace missing outcome values of 
+## treatment group with lowest observed and replace missing control 
+## outcome values with highest observed outcome
+t1t2_ebounds<-t1t2_ebounds %>%
+  mutate(hm_lowerbound = ifelse(is.na(knowledge.t2),hm_lowerbound_value,knowledge.t2))
+
+descr(t1t2_ebounds$knowledge.t2)
+descr(t1t2_ebounds$hm_upperbound)
+descr(t1t2_ebounds$hm_lowerbound)
+descr(t1t2_ebounds$knowledge.t1)
+
+# Creating long version of datasets
+t1t2Long <- t1t2_ebounds %>% convertLong()
+t1t2_upperboundLong <-  t1t2_ebounds %>%  mutate(knowledge.t2 = hm_upperbound) %>% convertLong()
+t1t2_lowerboundLong <- t1t2_ebounds %>%  mutate(knowledge.t2 = hm_lowerbound) %>% convertLong()
+
+# Mixed model analyses
+knowledgeMixed(t1t2Long) 
+knowledgeMixed(t1t2_upperboundLong) 
+knowledgeMixed(t1t2_lowerboundLong) 
+
+# Effect sizes for upper and lower bound
+effsize::cohen.d(t1t2_ebounds$knowledge.t2, t1t2_ebounds$knowledge.t1, paired=T, na.rm = T)
+effsize::cohen.d(t1t2_ebounds$hm_upperbound, t1t2_ebounds$knowledge.t1, paired=T, na.rm = T)
+effsize::cohen.d(t1t2_ebounds$hm_lowerbound, t1t2_ebounds$knowledge.t1, paired=T, na.rm = T)
+```
+
+```{r combined sample extreme bounds analyses}
+# Code adapted from https://www.povertyactionlab.org/resource/data-analysis
+
+# Loading data
+t1<- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1.csv", guess_max = min(12000))
+t1t2 <- read_csv("C:/Users/Calvin/Documents/Dropbox/Projects/mib/data/mib_combined_t1t2.csv", guess_max = min(12000))
+
+t1_no_t1t2_full <- anti_join(t1, t1t2, by = "id") 
+t1t2_ebounds <- full_join(t1t2, t1_no_t1t2_full)
+
+# Generating minimum and maximum values of the outcome
+hm_upperbound_value <- max(t1t2_ebounds$knowledge.t2, na.rm = T)
+hm_lowerbound_value <- min(t1t2_ebounds$knowledge.t2, na.rm = T)
+
+# To create upper bounds: replace missing outcome values of 
+## treatment group with the highest observed outcome and missing 
+## outcome values of control group with lowest observed outcome values
+t1t2_ebounds <- t1t2_ebounds %>%
+  mutate(hm_upperbound = ifelse(is.na(knowledge.t2),hm_upperbound_value,knowledge.t2))
+
+# To create lower bounds: replace missing outcome values of 
+## treatment group with lowest observed and replace missing control 
+## outcome values with highest observed outcome
+t1t2_ebounds<-t1t2_ebounds %>%
+  mutate(hm_lowerbound = ifelse(is.na(knowledge.t2),hm_lowerbound_value,knowledge.t2))
+
+descr(t1t2_ebounds$knowledge.t2)
+descr(t1t2_ebounds$hm_upperbound)
+descr(t1t2_ebounds$hm_lowerbound)
+descr(t1t2_ebounds$knowledge.t1)
+
+# Creating long version of datasets
+t1t2Long <- t1t2_ebounds %>% convertLong()
+t1t2_upperboundLong <-  t1t2_ebounds %>%  mutate(knowledge.t2 = hm_upperbound) %>% convertLong()
+t1t2_lowerboundLong <- t1t2_ebounds %>%  mutate(knowledge.t2 = hm_lowerbound) %>% convertLong()
+
+# Mixed model analyses
+knowledgeMixed(t1t2Long) 
+knowledgeMixed(t1t2_upperboundLong) 
+knowledgeMixed(t1t2_lowerboundLong) 
+
+# Effect sizes for upper and lower bound
+effsize::cohen.d(t1t2_ebounds$knowledge.t2, t1t2_ebounds$knowledge.t1, paired=T, na.rm = T)
+effsize::cohen.d(t1t2_ebounds$hm_upperbound, t1t2_ebounds$knowledge.t1, paired=T, na.rm = T)
+effsize::cohen.d(t1t2_ebounds$hm_lowerbound, t1t2_ebounds$knowledge.t1, paired=T, na.rm = T)
+```
+
+
